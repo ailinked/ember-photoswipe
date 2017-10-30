@@ -9,6 +9,7 @@ import { computed, getProperties } from '@ember/object';
 import { classify } from '@ember/string';
 import { isPresent } from '@ember/utils';
 import layout from '../templates/components/photo-swipe';
+import UI from './photo-swipe-ui';
 
 export default Component.extend({
   layout,
@@ -93,7 +94,7 @@ export default Component.extend({
 
   pswp: null,
   items: null,
-  itemProperties: ['src', 'h', 'w'],
+  itemProperties: ['src', 'h', 'w', 'msrc'],
 
   init() {
     this._super(...arguments);
@@ -164,13 +165,34 @@ export default Component.extend({
     const options = this.get('options');
     let assignedOptions;
     let pswp;
+    let ui;
+    let additionalButtons = this.get('additionalButtons');
+    if(UI && additionalButtons) {
+      ui = function ui() {
+        var innerUi = new UI(...arguments);
+        if(innerUi.elements) {
+          additionalButtons.forEach((button) => {
+            innerUi.elements.push({
+              name: 'button--'+button.name,
+              option: button.option,
+              onInit: button.onInit,
+              onTap: button.onTap,
+            });
+          });
+        }
+        return innerUi;
+      };
+    } else {
+      ui = PhotoSwipeUI_Default;
+    }
 
     items = items.map(function(item) {
       return getProperties(item, itemProperties);
     });
 
     assignedOptions = assign({}, options, actionOptions);
-    pswp = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, assignedOptions);
+
+    pswp = new PhotoSwipe(pswpElement, ui, items, assignedOptions);
 
     pswp.init();
 
